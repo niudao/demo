@@ -19,7 +19,7 @@ public class aes_rsa {
      * aes加密
      *
      * @param plainText 明文
-     * @param key       base64编码的对称密钥
+     * @param key       对称密钥
      * @return data
      */
     private static String aesEncrypt(String plainText, String key) {
