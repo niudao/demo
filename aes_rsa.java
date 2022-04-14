@@ -29,6 +29,21 @@ public class aes_rsa {
         byte[] encrypt = aes.encrypt(data);
         return Base64.encode(encrypt);
     }
+    
+    /**
+     * aes解密
+     *
+     * @param cipherText 密文
+     * @param key       对称密钥
+     * @return data
+     */
+     private static String aesDecrypt(String cipherText, String key) {
+        AES aes = SecureUtil.aes(key.getBytes());
+
+        byte[] bytes = Base64.decode(cipherText);
+        byte[] decrypt = aes.decrypt(bytes);
+        return new String(decrypt, StandardCharsets.UTF_8);
+    }
 
     /**
      * 签名
