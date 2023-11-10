@@ -15,9 +15,11 @@ class AesPhp7
      * @param    [type]                   $key   [加密key]
      * @return   [type]                          [加密后的数据]
      */
-    public static function encrypt($input, $key)
+    public static function encrypt($input, $key, $shouldSha1 = false)
     {
-        $key  = self::_sha1prng($key);
+        if ($shouldSha1) {
+            $key  = self::_sha1prng($key);
+        }
         $iv   = '';
         $data = openssl_encrypt($input, 'AES-128-ECB', $key, OPENSSL_RAW_DATA, $iv);
         $data = base64_encode($data);
@@ -30,9 +32,11 @@ class AesPhp7
      * @param    [type]                   $sKey [加密key]
      * @return   [type]                         [解密后的数据]
      */
-    public static function decrypt($sStr, $sKey)
+    public static function decrypt($sStr, $sKey, $shouldSha1 = false)
     {
-        $sKey      = self::_sha1prng($sKey);
+        if ($shouldSha1) {
+            $sKey      = self::_sha1prng($sKey);
+        }
         $iv        = '';
         $decrypted = openssl_decrypt(base64_decode($sStr), 'AES-128-ECB', $sKey, OPENSSL_RAW_DATA, $iv);
         return $decrypted;
@@ -54,7 +58,7 @@ class AesPhp7
      * @param int $length
      * @return 产生的随机字符串
      */
-    public function getNonceStr($length = 32)
+    public static function getNonceStr($length = 32)
     {
         $chars = "abcdefghijklmnopqrstuvwxyz0123456789";
         $str   = "";
@@ -113,7 +117,7 @@ class AesPhp5
      * @param int $length
      * @return 产生的随机字符串
      */
-    public function getNonceStr($length = 32)
+    public static function getNonceStr($length = 32)
     {
         $chars = "abcdefghijklmnopqrstuvwxyz0123456789";
         $str   = "";
@@ -190,6 +194,16 @@ class RSA
     {
         die('RSA Error:' . $msg); //TODO
     }
+
+    private function _get_content_from( $path_or_content )
+    {
+        $content = ctype_print($path_or_content) && file_exists( $path_or_content )
+            ? file_get_contents( $path_or_content )
+            :                    $path_or_content;
+
+        return $content;
+    }
+
     /**
      * 构造函数
      *
@@ -399,14 +413,27 @@ class RSA
     }
     private function _getPublicKey($file)
     {
-        $key_content = $this->_readFile($file);
+        $key_content = $this->_get_content_from($file);
+        if (is_string($key_content)) {
+            if (substr($key_content, 0, 1) !== "-") {
+                //邮件给的公钥有没有头尾包含pkcs8补全格式 -----BEGIN PUBLIC KEY----- 与 -----END PUBLIC KEY----- 所以要前后添加来构成pem格式的key
+                $key_content = "-----BEGIN PUBLIC KEY-----\n" . $key_content . "\n-----END PUBLIC KEY-----\n";
+            }
+        }
+
         if ($key_content) {
             $this->pubKey = openssl_get_publickey($key_content);
         }
     }
     private function _getPrivateKey($file)
     {
-        $key_content = $this->_readFile($file);
+        $key_content = $this->_get_content_from($file);
+        if (is_string($key_content)) {
+            if (substr($key_content, 0, 1) !== "-") {
+                //邮件给的私钥没有头尾包含pkcs1补全格式 -----BEGIN RSA PRIVATE KEY----- 与 -----END RSA PRIVATE KEY----- 所以要前后添加来构成pem格式的key
+                $key_content = "-----BEGIN RSA PRIVATE KEY-----\n" . $key_content . "\n-----END RSA PRIVATE KEY-----\n";
+            }
+        }
         if ($key_content) {
             $this->priKey = openssl_get_privatekey($key_content);
         }
